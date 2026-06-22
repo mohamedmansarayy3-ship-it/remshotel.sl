@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Booking | REMS HOTEL</title>
+<style>
+  body{font-family:Arial,Helvetica,sans-serif;background:#f4f6f8;margin:0;padding:20px}
+  .box{max-width:680px;margin:auto;background:#fff;padding:20px;border-radius:8px}
+  label{display:block;margin-top:12px;font-weight:600}
+  input,select{width:100%;padding:10px;margin-top:6px;border:1px solid #ccc;border-radius:6px}
+  button{margin-top:16px;padding:12px 16px;background:#0a7cff;color:#fff;border:none;border-radius:8px;cursor:pointer}
+  .muted{font-size:13px;color:#666;margin-top:6px}
+</style>
+</head>
+<body>
+  <main class="box" id="app">
+    <h2>Complete Booking</h2>
+    <p class="muted">Confirm details and proceed to payment.</p>
+
+    <form id="bookingForm" novalidate>
+      <label>Room</label>
+      <input id="room" name="room" readonly>
+
+      <label>Room Number</label>
+      <input id="number" name="number" readonly>
+
+      <label>Pricing Type</label>
+      <select id="type" name="type">
+        <option value="night">Per Night</option>
+        <option value="hour">Per Hour</option>
+      </select>
+
+      <label>Duration</label>
+      <input id="duration" name="duration" type="number" min="1" value="1">
+
+      <label>Your Name</label>
+      <input id="name" name="name" required>
+
+      <label>Email</label>
+      <input id="email" name="email" type="email" required>
+
+      <label>Phone</label>
+      <input id="phone" name="phone" required>
+
+      <label>Check-in</label>
+      <input id="checkin" name="checkin" type="date" required>
+
+      <label>Check-out</label>
+      <input id="checkout" name="checkout" type="date">
+
+      <div class="muted" id="summary"></div>
+
+      <button type="submit">Proceed to Payment</button>
+    </form>
+  </main>
+<script>
+/* Booking page script: read bookingData from sessionStorage (fallback to query params),
+   populate fields (roomName -> room, roomId -> number, duration, amount), auto-calc totals,
+   and submit to payment. */
+(function(){
+  function el(id){ return document.getElementById(id); }
+  function safeText(s){ return (s||"").toString().trim(); }
+  function toNumber(v, fallback=0){ const n = Number(v); return Number.isFinite(n)? n : fallback }
+  function fmt(n){ return Number(n).toFixed(2); }
+
+  // read structured booking from sessionStorage first
+  let stored = null;
+  try{ stored = JSON.parse(sessionStorage.getItem('bookingData') || 'null'); }catch(e){ stored = null }
+
+  // fallback: parse URL params (URL params take precedence)
+  const urlParams = Object.fromEntries(new URLSearchParams(location.search).entries());
+  const incoming = Object.assign({}, stored || {}, urlParams || {});
+
+  // Helper: prefer URL keys roomName/roomId/amount/duration
+  if (incoming.roomName || incoming.room) el('room').value = incoming.roomName || incoming.room || '';
+  if (incoming.roomId || incoming.number) el('number').value = incoming.roomId || incoming.number || '';
+  if (incoming.type) el('type').value = incoming.type;
+  if (incoming.duration) el('duration').value = incoming.duration;
+
+  // Interpret provided amount as total amount (for the provided duration).
+  const providedAmount = toNumber(incoming.amount || incoming.price || incoming.totalAmount || 0);
+  const initialDuration = Math.max(1, toNumber(incoming.duration || el('duration').value || 1));
+
+  // derive unit price from provided amount if provided (unitPrice = total / duration)
+  const unitPrice = initialDuration ? (providedAmount ? (providedAmount / initialDuration) : 0) : 0;
+
+  // set per-unit fallback prices used in calculations
+  const nightPrice = toNumber(incoming.nightPrice) || unitPrice || toNumber(incoming.night) || 0;
+  const hourPrice  = toNumber(incoming.hourPrice)  || unitPrice || toNumber(incoming.hour)  || 0;
+
+  // update summary element with live calculation
+  const summary = el('summary');
+
+  function calculateTotal(){
+    const type = el('type').value;
+    const duration = Math.max(1, toNumber(el('duration').value,1));
+    // prefer explicit per-unit price if provided, otherwise fall back to unitPrice derived from amount
+    let base = (type === 'night') ? nightPrice : hourPrice;
+    if (!base && unitPrice) base = unitPrice;
+    const total = +(base * duration);
+    return Number.isFinite(total) ? +total.toFixed(2) : 0;
+  }
+
+  function updateSummary(){
+    const total = calculateTotal();
+    summary.innerHTML = `Estimated total: <strong>$${fmt(total)}</strong>`;
+  }
+
+  // initial summary and checkout state
+  const checkoutEl = el('checkout');
+  if (checkoutEl) {
+    checkoutEl.disabled = (el('type').value === 'hour');
+    checkoutEl.required = (el('type').value === 'night');
+  }
+  updateSummary();
+
+  // bind change events
+  el('type').addEventListener('change', ()=>{
+    if (el('type').value === 'hour') {
+      if (checkoutEl) { checkoutEl.value = ''; checkoutEl.disabled = true; checkoutEl.required = false; }
+    } else {
+      if (checkoutEl) { checkoutEl.disabled = false; checkoutEl.required = true; }
+    }
+    updateSummary();
+  });
+  el('duration').addEventListener('input', updateSummary);
+
+  // ----------------- NEW: API probe / resolver -----------------
+  // Tries several candidate availability endpoints and returns a base URL (without the /api path)
+  let _apiBase = null;
+  async function probe(url, timeout=1000){
+    const ctl = new AbortController();
+    const id = setTimeout(()=> ctl.abort(), timeout);
+    try{
+      const r = await fetch(url, { method:'GET', signal: ctl.signal, cache: 'no-store' });
+      clearTimeout(id);
+      return r.ok;
+    }catch(e){
+      clearTimeout(id);
+      return false;
+    }
+  }
+  async function resolveApiBase(){
+    if (_apiBase !== null) return _apiBase;
+    const candidates = [
+      '/api/bookings/availability',
+      'http://127.0.0.1:3000/api/bookings/availability',
+      'http://127.0.0.1:5000/api/bookings/availability',
+      'http://localhost:3000/api/bookings/availability',
+      'http://localhost:5000/api/bookings/availability'
+    ];
+    for (const c of candidates){
+      try{
+        const ok = await probe(c, 800);
+        if (ok){
+          // strip the trailing '/api/bookings/availability' to return base
+          _apiBase = c.replace(/\/api\/bookings\/availability$/, '');
+          return _apiBase;
+        }
+      }catch(e){}
+    }
+    _apiBase = ''; // none reachable
+    return _apiBase;
+  }
+  // ----------------- END NEW SECTION -----------------
+
+  // small helper: local availability using localStorage bookedRooms
+  function localIsAvailable(roomKey){
+    try{
+      const arr = JSON.parse(localStorage.getItem('bookedRooms') || '[]');
+      if (!Array.isArray(arr)) return true;
+      return !arr.includes(String(roomKey));
+    }catch(e){
+      return true; // if storage broken, allow proceed
+    }
+  }
+
+  // Form submit: validate and store booking data, then create provisional booking on server
+  const form = el('bookingForm');
+  form.addEventListener('submit', async (ev)=>{
+    ev.preventDefault();
+
+    // basic validation
+    const name = safeText(el('name').value);
+    const email = safeText(el('email').value);
+    const phone = safeText(el('phone').value);
+    const checkin = el('checkin').value;
+    const type = el('type').value;
+    const checkout = el('checkout').value || null;
+
+    if (!name || !email || !phone || !checkin){
+      alert('Please fill required fields: name, email, phone, check-in.');
+      return;
+    }
+
+    if (type === 'night' && !checkout){
+      alert('Please select a check-out date for night bookings.');
+      return;
+    }
+
+    // Ensure checkout is not earlier than checkin (if provided)
+    if (checkout){
+      const ci = new Date(checkin);
+      const co = new Date(checkout);
+      if (co < ci){ alert('Check-out must be the same or after check-in.'); return; }
+    }
+
+    const totalAmount = calculateTotal();
+
+    const booking = {
+      room: el('room').value || '',
+      roomName: el('room').value || '',
+      number: el('number').value || '',
+      roomId: el('number').value || '',
+      type,
+      duration: toNumber(el('duration').value,1),
+      nightPrice,
+      hourPrice,
+      totalAmount,
+      amount: totalAmount,
+      name,
+      email,
+      phone,
+      checkin,
+      checkout: type === 'night' ? checkout : null,
+      createdAt: new Date().toISOString()
+    };
+
+    try{
+      const base = await resolveApiBase();
+
+      // If backend available, create a provisional booking
+      if (base) {
+        const resp = await fetch((base.endsWith('/')? base.slice(0,-1): base) + '/api/bookings/provisional', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            room: booking.number || booking.room,
+            roomId: booking.roomId || null,
+            type: booking.type,
+            duration: booking.duration,
+            start: booking.checkin,
+            end: booking.checkout
+          })
+        });
+
+        if (resp.status === 409) {
+          const j = await resp.json().catch(()=>({}));
+          alert('Room unavailable: ' + (j.conflict ? (j.conflict.id || 'conflict') : 'conflict'));
+          return;
+        }
+        if (!resp.ok) {
+          const t = await resp.text().catch(()=>resp.statusText);
+          alert('Failed creating provisional booking: ' + t);
+          return;
+        }
+        const data = await resp.json();
+        // persist the returned provisional id + booking for payment page
+        booking.provisionalId = data.provisionalId;
+        booking.totalAmount = data.amount || booking.totalAmount;
+        try{ sessionStorage.setItem('bookingData', JSON.stringify(booking)); }catch(e){}
+        location.href = 'payment.html';
+        return;
+      } else {
+        // fallback: no backend — use local storage check and proceed as before
+        const localKey = booking.roomId || booking.number || booking.room;
+        if (!localIsAvailable(localKey)){
+          alert('Room appears booked (local data). Please choose another room.');
+          return;
+        }
+        try{ sessionStorage.setItem('bookingData', JSON.stringify(booking)); }catch(e){}
+        location.href = 'payment.html';
+        return;
+      }
+    }catch(err){
+      console.error('provision err', err);
+      alert('Error creating provisional booking: ' + (err && err.message ? err.message : 'Unknown'));
+    }
+  });
+
+})();
+</script>
+</body>
+</html>

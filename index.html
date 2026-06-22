@@ -1,0 +1,806 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>REMS HOTEL Rooms</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+:root{
+  --primary:#0a7cff;
+  --bg:#f4f6f8;
+  --dark:#0b1c33;
+  --gold:#d4af37;
+  --glass:rgba(255,255,255,.12);
+}
+
+body{margin:0;font-family:"Segoe UI",Arial,sans-serif;background:var(--bg)}
+
+/* ===== HEADER (merged & cleaned) ===== */
+.lux-header{
+  position:sticky;
+  top:0;
+  z-index:1000;
+  height:90px;
+  background:
+    linear-gradient(135deg,rgba(5,20,40,.85),rgba(5,20,40,.6)),
+    url("https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=1800&q=80");
+  background-size:cover;
+  background-position:center;
+  transition:.4s;
+}
+.lux-header.scrolled{
+  height:75px;
+  box-shadow:0 10px 30px rgba(0,0,0,.35);
+}
+
+/* ===== OVERLAY ===== */
+.lux-overlay{
+  position:absolute;
+  inset:0;
+  backdrop-filter:blur(6px);
+  -webkit-backdrop-filter: blur(6px); /* Safari */
+  pointer-events: none; /* allow clicks through overlay */
+  z-index:0;
+}
+
+/* ===== CONTAINER ===== */
+.lux-container{
+  position:relative;
+  max-width:1300px;
+  margin:auto;
+  height:100%;
+  padding:0 24px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  color:#fff;
+  z-index:1; /* ensure header content sits above overlay */
+}
+
+/* ===== LOGO ===== */
+.lux-logo{
+  font-size:24px;
+  font-weight:700;
+  letter-spacing:1px;
+  cursor:pointer;
+  line-height: 1;
+  margin-bottom: 0 0 5px 0;
+}
+.lux-logo span{ color:var(--gold) }
+.Rem.png img{
+  margin-left: 100px;
+  display: block;
+}
+
+/* ===== NAV ===== */
+.lux-nav{
+  display:flex;
+  gap:28px;
+}
+.lux-nav a{
+  text-decoration:none;
+  color:#f3f6ff;
+  font-size:14px;
+  font-weight:500;
+  position:relative;
+}
+.lux-nav a::after{
+  content:"";
+  position:absolute;
+  left:0;
+  bottom:-6px;
+  width:0;
+  height:2px;
+  background:var(--gold);
+  transition:.3s;
+}
+.lux-nav a:hover::after,
+.lux-nav a.active::after{ width:100% }
+
+/* ===== ACTIONS ===== */
+.lux-actions{
+  display:flex;
+  align-items:center;
+  gap:16px;
+}
+.lux-btn{
+  padding:10px 20px;
+  background:linear-gradient(135deg,var(--gold),#b8962e);
+  border:none;
+  border-radius:30px;
+  color:#000;
+  font-weight:600;
+  cursor:pointer;
+  transition:.3s;
+}
+.lux-btn:hover{ transform:translateY(-1px); box-shadow:0 8px 20px rgba(212,175,55,.5) }
+
+/* ===== MOBILE MENU ===== */
+.lux-menu{
+  display:none;
+  background:none;
+  border:none;
+  font-size:26px;
+  color:#fff;
+  cursor:pointer;
+}
+
+/* ===== ROOMS LAYOUT ===== */
+.rooms-container{
+  max-width:1200px;
+  margin:auto;
+  padding:30px 20px;
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(260px,1fr));
+  gap:22px;
+  font-size: 14px;
+  text-align: center;
+}
+.room-card{
+  background:#fff;
+  border-radius:30px;
+  overflow:hidden;
+  box-shadow:0 20px 25px rgba(238, 3, 23, 0.724);
+}
+.lux-header nav a:hover{color:var(--primary)}
+.room-card img{
+  width:100%;
+  height:160px;
+  object-fit:cover;
+}
+.room-details{padding:16px}
+.room-number{font: size 18px; color:#010101}
+.room-desc{font-size:14px;color:#100b0b;margin:8px 0}
+.card-controls{display:flex;gap:10px;margin:10px 0}
+.card-controls select,.card-controls input{flex:1;padding:7px}
+.room-price{font-size:18px;font-weight:700;color:var(--primary)}
+.book-btn{display:block;margin-top:12px;padding:10px;background:var(--primary);color:#fff;text-align:center;border-radius:8px;cursor:pointer;text-decoration:none}
+.note{font-size:12px;color:#050303}
+
+/* ===== FOOTER ===== */
+footer{background:var(--dark);color:#fff;margin-top:40px;padding:28px 20px}
+.footer-content{max-width:1200px;margin:auto;display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:20px}
+footer h4{margin:0 0 10px}
+footer p,footer a{font-size:13px;color:#cfd8ff;text-decoration:none}
+footer a:hover{text-decoration:underline}
+.footer-bottom{text-align:center;margin-top:20px;font-size:12px;color:#9fb0ff}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 900px) {
+  .lux-container{ padding:0 18px }
+  .lux-logo{ font-size:20px }
+  .lux-nav{
+    position:absolute;
+    top:90px;
+    right:16px;
+    background:rgba(10,20,35,.97);
+    backdrop-filter:blur(12px);
+    flex-direction:column;
+    gap:14px;
+    padding:18px 20px;
+    border-radius:16px;
+    width:220px;
+    display:none;
+    box-shadow:0 15px 35px rgba(0,0,0,.45);
+  }
+  .lux-nav.open{ display:flex }
+  .lux-nav a{ font-size:15px }
+  .lux-menu{ display:block }
+}
+
+@media (max-width: 420px){
+  .lux-header{ height:80px }
+  .lux-header.scrolled{ height:68px }
+}
+</style>
+</head>
+
+<body>
+  <script src="availability.js"></script>
+  <!-- ========= PREMIUM HOTEL HEADER ========= -->
+<header class="lux-header" id="luxHeader">
+  <div class="lux-overlay"></div>
+  <div class="">
+  </div>
+
+  <div class="lux-container">
+    <!-- Logo -->
+    <div class="lux-logo">
+      <span>REMS</span> HOTEL<br>
+     <span>Life Style&</span>Confort
+
+    </div>
+
+    
+  
+
+  
+</header>
+
+<main class="rooms-container">
+  
+
+<!-- Room 1 -->
+<section class="room-card">
+<img src="https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=900&q=60" alt="Standard Room">
+<div class="room-details">
+<h2>Standard Room</h2>
+<p class="room-number">Room 001</p>
+<p class="room-desc">A cozy room with essential amenities, perfect for short stays and solo travelers.</p>
+
+<div class="card-controls">
+<select class="pricingType">
+  <option value="night">Per Night</option>
+  <option value="hour">Per Hour</option>
+</select>
+<input type="number" class="duration" value="1" min="1" aria-label="Duration">
+</div>
+
+<p class="room-price" data-night="20" data-hour="1">$20</p>
+<p class="note">Hourly price starts from $1 per hour</p>
+<a class="book-btn" onclick="goToBooking(this)">Book Now</a>
+</div>
+</section>
+
+<!-- Room 1 -->
+<section class="room-card">
+<img src="https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=900&q=60" alt="Standard Room">
+<div class="room-details">
+<h2>Standard Room</h2>
+<p class="room-number">Room 002</p>
+<p class="room-desc">A cozy room with essential amenities, perfect for short stays and solo travelers.</p>
+
+<div class="card-controls">
+<select class="pricingType">
+  <option value="night">Per Night</option>
+  <option value="hour">Per Hour</option>
+</select>
+<input type="number" class="duration" value="1" min="1" aria-label="Duration">
+</div>
+
+<p class="room-price" data-night="20" data-hour="1">$20</p>
+<p class="note">Hourly price starts from $1 per hour</p>
+<a class="book-btn" onclick="goToBooking(this)">Book Now</a>
+</div>
+</section>
+
+<!-- Room 2 -->
+<section class="room-card">
+<img src="https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?auto=format&fit=crop&w=900&q=60" alt="Deluxe Room">
+<div class="room-details">
+<h2>Deluxe Room</h2>
+<p class="room-number">Room 002</p>
+<p class="room-desc">Spacious room with premium furniture, ideal for couples and business travelers.</p>
+
+<div class="card-controls">
+<select class="pricingType">
+  <option value="night">Per Night</option>
+  <option value="hour">Per Hour</option>
+</select>
+<input type="number" class="duration" value="1" min="1" aria-label="Duration">
+</div>
+
+<p class="room-price" data-night="35" data-hour="3">$35</p>
+<p class="note">Comfort and style included</p>
+<a class="book-btn" onclick="goToBooking(this)">Book Now</a>
+</div>
+</section>
+
+<!-- Room 2 -->
+<section class="room-card">
+<img src="https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?auto=format&fit=crop&w=900&q=60" alt="Deluxe Room">
+<div class="room-details">
+<h2>Deluxe Room</h2>
+<p class="room-number">Room 002</p>
+<p class="room-desc">Spacious room with premium furniture, ideal for couples and business travelers.</p>
+
+<div class="card-controls">
+<select class="pricingType">
+  <option value="night">Per Night</option>
+  <option value="hour">Per Hour</option>
+</select>
+<input type="number" class="duration" value="1" min="1" aria-label="Duration">
+</div>
+
+<p class="room-price" data-night="35" data-hour="3">$35</p>
+<p class="note">Comfort and style included</p>
+<a class="book-btn" onclick="goToBooking(this)">Book Now</a>
+</div>
+</section>
+
+<!-- Room 3 -->
+<section class="room-card">
+<img src="https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?auto=format&fit=crop&w=900&q=60" alt="Executive Suite">
+<div class="room-details">
+<h2>Executive Suite</h2>
+<p class="room-number">Room 003</p>
+<p class="room-desc">Luxury suite with a workspace, perfect for executives and long stays.</p>
+
+<div class="card-controls">
+<select class="pricingType">
+  <option value="night">Per Night</option>
+  <option value="hour">Per Hour</option>
+</select>
+<input type="number" class="duration" value="1" min="1" aria-label="Duration">
+</div>
+
+<p class="room-price" data-night="55" data-hour="5">$55</p>
+<p class="note">Includes workspace & lounge area</p>
+<a class="book-btn" onclick="goToBooking(this)">Book Now</a>
+</div>
+</section>
+
+<!-- Room 4 -->
+<section class="room-card">
+<img src="https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=900&q=60" alt="Family Room">
+<div class="room-details">
+<h2>Family Room</h2>
+<p class="room-number">Room 004</p>
+<p class="room-desc">Large room with multiple beds, designed for families and group stays.</p>
+
+<div class="card-controls">
+<select class="pricingType">
+  <option value="night">Per Night</option>
+  <option value="hour">Per Hour</option>
+</select>
+<input type="number" class="duration" value="1" min="1" aria-label="Duration">
+</div>
+
+<p class="room-price" data-night="45" data-hour="4">$45</p>
+<p class="note">Fits up to 4 guests</p>
+<a class="book-btn" onclick="goToBooking(this)">Book Now</a>
+</div>
+</section>
+
+<!-- Room 4 -->
+<section class="room-card">
+<img src="https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=900&q=60" alt="Family Room">
+<div class="room-details">
+<h2>Family Room</h2>
+<p class="room-number">Room 004</p>
+<p class="room-desc">Large room with multiple beds, designed for families and group stays.</p>
+
+<div class="card-controls">
+<select class="pricingType">
+  <option value="night">Per Night</option>
+  <option value="hour">Per Hour</option>
+</select>
+<input type="number" class="duration" value="1" min="1" aria-label="Duration">
+</div>
+
+<p class="room-price" data-night="45" data-hour="4">$45</p>
+<p class="note">Fits up to 4 guests</p>
+<a class="book-btn" onclick="goToBooking(this)">Book Now</a>
+</div>
+</section>
+<!-- Room 5 -->
+<section class="room-card">
+<img src="https://images.unsplash.com/photo-1590490360182-c33d57733427?auto=format&fit=crop&w=900&q=60" alt="Luxury Suite">
+<div class="room-details">
+<h2>Luxury Suite</h2>
+<p class="room-number">Room 005</p>
+<p class="room-desc">High-end suite with elegant décor, city views, and premium services.</p>
+
+<div class="card-controls">
+<select class="pricingType">
+  <option value="night">Per Night</option>
+  <option value="hour">Per Hour</option>
+</select>
+<input type="number" class="duration" value="1" min="1" aria-label="Duration">
+</div>
+
+<p class="room-price" data-night="80" data-hour="8">$80</p>
+<p class="note">Top-tier luxury experience</p>
+<a class="book-btn" onclick="goToBooking(this)">Book Now</a>
+</div>
+</section>
+
+
+<!-- Room 5 -->
+<section class="room-card">
+<img src="https://images.unsplash.com/photo-1590490360182-c33d57733427?auto=format&fit=crop&w=900&q=60" alt="Luxury Suite">
+<div class="room-details">
+<h2>Luxury Suite</h2>
+<p class="room-number">Room 005</p>
+<p class="room-desc">High-end suite with elegant décor, city views, and premium services.</p>
+
+<div class="card-controls">
+<select class="pricingType">
+  <option value="night">Per Night</option>
+  <option value="hour">Per Hour</option>
+</select>
+<input type="number" class="duration" value="1" min="1" aria-label="Duration">
+</div>
+
+<p class="room-price" data-night="80" data-hour="8">$80</p>
+<p class="note">Top-tier luxury experience</p>
+<a class="book-btn" onclick="goToBooking(this)">Book Now</a>
+</div>
+</section>
+
+<!-- Room 6 -->
+<section class="room-card">
+<img src="https://images.unsplash.com/photo-1578683010236-d716f9a3f461?auto=format&fit=crop&w=900&q=60" alt="Presidential Suite">
+<div class="room-details">
+<h2>Presidential Suite</h2>
+<p class="room-number">Room 006</p>
+<p class="room-desc">Exclusive suite with private lounge, perfect for VIP guests.</p>
+
+<div class="card-controls">
+<select class="pricingType">
+  <option value="night">Per Night</option>
+  <option value="hour">Per Hour</option>
+</select>
+<input type="number" class="duration" value="1" min="1" aria-label="Duration">
+</div>
+
+<p class="room-price" data-night="120" data-hour="12">$120</p>
+<p class="note">Ultimate comfort & privacy</p>
+<a class="book-btn" onclick="goToBooking(this)">Book Now</a>
+</div>
+</section>
+
+
+<!-- Room 6 -->
+<section class="room-card">
+<img src="https://images.unsplash.com/photo-1578683010236-d716f9a3f461?auto=format&fit=crop&w=900&q=60" alt="Presidential Suite">
+<div class="room-details">
+<h2>Presidential Suite</h2>
+<p class="room-number">Room 006</p>
+<p class="room-desc">Exclusive suite with private lounge, perfect for VIP guests.</p>
+
+<div class="card-controls">
+<select class="pricingType">
+  <option value="night">Per Night</option>
+  <option value="hour">Per Hour</option>
+</select>
+<input type="number" class="duration" value="1" min="1" aria-label="Duration">
+</div>
+
+<p class="room-price" data-night="120" data-hour="12">$120</p>
+<p class="note">Ultimate comfort & privacy</p>
+<a class="book-btn" onclick="goToBooking(this)">Book Now</a>
+</div>
+</section>
+
+<!-- Add Rooms 007 - 012 -->
+<section class="room-card">
+<img src="https://images.unsplash.com/photo-1496417263034-38ec4f0b665a?auto=format&fit=crop&w=900&q=60" alt="Garden Room">
+<div class="room-details">
+<h2>Garden Room</h2>
+<p class="room-number">Room 007</p>
+<p class="room-desc">Quiet room with garden views, ideal for restful stays.</p>
+
+<div class="card-controls">
+<select class="pricingType">
+  <option value="night">Per Night</option>
+  <option value="hour">Per Hour</option>
+</select>
+<input type="number" class="duration" value="1" min="1" aria-label="Duration">
+</div>
+
+<p class="room-price" data-night="30" data-hour="2">$30</p>
+<p class="note">Peaceful and green surroundings</p>
+<a class="book-btn" onclick="goToBooking(this)">Book Now</a>
+</div>
+</section>
+
+<section class="room-card">
+<img src="https://images.unsplash.com/photo-1505691723518-36a7c1f16baf?auto=format&fit=crop&w=900&q=60" alt="Twin Room">
+<div class="room-details">
+<h2>Twin Room</h2>
+<p class="room-number">Room 008</p>
+<p class="room-desc">Two comfortable beds, perfect for friends or colleagues.</p>
+
+<div class="card-controls">
+<select class="pricingType">
+  <option value="night">Per Night</option>
+  <option value="hour">Per Hour</option>
+</select>
+<input type="number" class="duration" value="1" min="1" aria-label="Duration">
+</div>
+
+<p class="room-price" data-night="28" data-hour="2">$28</p>
+<p class="note">Flexible bedding options</p>
+<a class="book-btn" onclick="goToBooking(this)">Book Now</a>
+</div>
+</section>
+
+<section class="room-card">
+<img src="https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&w=900&q=60" alt="Studio Room">
+<div class="room-details">
+<h2>Studio Room</h2>
+<p class="room-number">Room 009</p>
+<p class="room-desc">Open-plan studio with kitchenette for longer stays.</p>
+
+<div class="card-controls">
+<select class="pricingType">
+  <option value="night">Per Night</option>
+  <option value="hour">Per Hour</option>
+</select>
+<input type="number" class="duration" value="1" min="1" aria-label="Duration">
+</div>
+
+<p class="room-price" data-night="48" data-hour="4">$48</p>
+<p class="note">Includes small kitchenette</p>
+<a class="book-btn" onclick="goToBooking(this)">Book Now</a>
+</div>
+</section>
+
+<section class="room-card">
+<img src="https://images.unsplash.com/photo-1522771739844-6a9f6d5f14af?auto=format&fit=crop&w=900&q=60" alt="Accessible Room">
+<div class="room-details">
+<h2>Accessible Room</h2>
+<p class="room-number">Room 012</p>
+<p class="room-desc">Wheelchair accessible room with wider doors and grab rails.</p>
+
+<div class="card-controls">
+<select class="pricingType">
+  <option value="night">Per Night</option>
+  <option value="hour">Per Hour</option>
+</select>
+<input type="number" class="duration" value="1" min="1" aria-label="Duration">
+</div>
+
+<p class="room-price" data-night="34" data-hour="2">$34</p>
+<p class="note">Designed for accessibility and comfort</p>
+<a class="book-btn" onclick="goToBooking(this)">Book Now</a>
+</div>
+</section>
+
+
+<section class="room-card">
+<img src="https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?auto=format&fit=crop&w=900&q=60" alt="Honeymoon Suite">
+<div class="room-details">
+<h2>Honeymoon Suite</h2>
+<p class="room-number">Room 010</p>
+<p class="room-desc">Romantic suite with luxury amenities and private balcony.</p>
+
+<div class="card-controls">
+<select class="pricingType">
+  <option value="night">Per Night</option>
+  <option value="hour">Per Hour</option>
+</select>
+<input type="number" class="duration" value="1" min="1" aria-label="Duration">
+</div>
+
+<p class="room-price" data-night="95" data-hour="9">$95</p>
+<p class="note">Perfect for special occasions</p>
+<a class="book-btn" onclick="goToBooking(this)">Book Now</a>
+</div>
+</section>
+
+<section class="room-card">
+<img src="https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?auto=format&fit=crop&w=900&q=60" alt="Business Room">
+<div class="room-details">
+<h2>Business Room</h2>
+<p class="room-number">Room 011</p>
+<p class="room-desc">Work-friendly room with desk and fast Wi-Fi.</p>
+
+<div class="card-controls">
+<select class="pricingType">
+  <option value="night">Per Night</option>
+  <option value="hour">Per Hour</option>
+</select>
+<input type="number" class="duration" value="1" min="1" aria-label="Duration">
+</div>
+
+<p class="room-price" data-night="40" data-hour="3">$40</p>
+<p class="note">Ideal for business travelers</p>
+<a class="book-btn" onclick="goToBooking(this)">Book Now</a>
+</div>
+</section>
+
+<section class="room-card">
+<img src="https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?auto=format&fit=crop&w=900&q=60" alt="Business Room">
+<div class="room-details">
+<h2>Business Room</h2>
+<p class="room-number">Room 011</p>
+<p class="room-desc">Work-friendly room with desk and fast Wi-Fi.</p>
+
+<div class="card-controls">
+<select class="pricingType">
+  <option value="night">Per Night</option>
+  <option value="hour">Per Hour</option>
+</select>
+<input type="number" class="duration" value="1" min="1" aria-label="Duration">
+</div>
+
+<p class="room-price" data-night="40" data-hour="3">$40</p>
+<p class="note">Ideal for business travelers</p>
+<a class="book-btn" onclick="goToBooking(this)">Book Now</a>
+</div>
+</section>
+
+<section class="room-card">
+<img src="https://images.unsplash.com/photo-1522771739844-6a9f6d5f14af?auto=format&fit=crop&w=900&q=60" alt="Accessible Room">
+<div class="room-details">
+<h2>Accessible Room</h2>
+<p class="room-number">Room 012</p>
+<p class="room-desc">Wheelchair accessible room with wider doors and grab rails.</p>
+
+<div class="card-controls">
+<select class="pricingType">
+  <option value="night">Per Night</option>
+  <option value="hour">Per Hour</option>
+</select>
+<input type="number" class="duration" value="1" min="1" aria-label="Duration">
+</div>
+
+<p class="room-price" data-night="34" data-hour="2">$34</p>
+<p class="note">Designed for accessibility and comfort</p>
+<a class="book-btn" onclick="goToBooking(this)">Book Now</a>
+</div>
+</section>
+
+
+<section class="room-card">
+<img src="https://images.unsplash.com/photo-1522771739844-6a9f6d5f14af?auto=format&fit=crop&w=900&q=60" alt="Accessible Room">
+<div class="room-details">
+<h2>Accessible Room</h2>
+<p class="room-number">Room 012</p>
+<p class="room-desc">Wheelchair accessible room with wider doors and grab rails.</p>
+
+<div class="card-controls">
+<select class="pricingType">
+  <option value="night">Per Night</option>
+  <option value="hour">Per Hour</option>
+</select>
+<input type="number" class="duration" value="1" min="1" aria-label="Duration">
+</div>
+
+<p class="room-price" data-night="34" data-hour="2">$34</p>
+<p class="note">Designed for accessibility and comfort</p>
+<a class="book-btn" onclick="goToBooking(this)">Book Now</a>
+</div>
+</section>
+
+
+</main>
+
+<footer>
+  <div class="footer-content">
+    <div>
+      <h4>REMS HOTEL</h4>
+      <p>Luxury rooms designed for comfort and elegance.</p>
+    </div>
+    <div>
+      <h4>Explore</h4>
+      <p><a href="index.html">Room</a></p>
+      <p><a href="#">Offers</a></p>
+      <p><a href="#">Support</a></p>
+    </div>
+    <div>
+      <h4>Contact</h4>
+      <p>Email: groupsix@gmail.com</p>
+      <p>Phone: +23233-503-686/+23274-603-690</p>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    © 2026 REMS HOTEL. All rights reserved.
+  </div>
+</footer>
+
+<script>
+function goToBooking(btn){
+  const card = btn.closest(".room-card");
+  if (!card) return;
+
+  const room = card.querySelector("h2").textContent.trim();
+  const number = card.querySelector(".room-number").textContent.trim();
+  const type = card.querySelector(".pricingType").value;
+  const duration = Number(card.querySelector(".duration").value) || 1;
+  const priceEl = card.querySelector(".room-price");
+  const nightPrice = parseFloat(priceEl.dataset.night) || 0;
+  const hourPrice = parseFloat(priceEl.dataset.hour) || 0;
+  const base = type === 'night' ? nightPrice : hourPrice;
+  const total = +(base * duration).toFixed(2);
+
+  // structured data (reliable across pages)
+  const bookingData = {
+    room,
+    number,
+    type,
+    duration,
+    nightPrice,
+    hourPrice,
+    totalAmount: total,
+    createdAt: new Date().toISOString()
+  };
+  try{ sessionStorage.setItem('bookingData', JSON.stringify(bookingData)); }catch(e){ /* ignore */ }
+
+  // query params as a fallback for shallow linking
+  const params = new URLSearchParams({ room, number, type, duration: String(duration), price: String(total) });
+  window.location.href = "booking.html?" + params.toString();
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+
+  /* ================= IMAGE POOL ================= */
+  const imagePool = [
+    "https://images.unsplash.com/photo-1582719478250-c89cae4dc85b",
+    "https://images.unsplash.com/photo-1505693416388-ac5ce068fe85",
+    "https://images.unsplash.com/photo-1560448204-e02f11c3d0e2",
+    "https://images.unsplash.com/photo-1590490360182-c33d57733427",
+    "https://images.unsplash.com/photo-1578683010236-d716f9a3f461",
+    "https://images.unsplash.com/photo-1542314831-068cd1dbfeeb",
+    "https://images.unsplash.com/photo-1496417263034-38ec4f0b665a"
+  ];
+
+  const images = document.querySelectorAll(".room-card img");
+
+  /* ================= PRICE CALCULATION (per card) ================= */
+  const cards = document.querySelectorAll('.room-card');
+  cards.forEach(card => {
+    try{
+      const type = card.querySelector('.pricingType');
+      const duration = card.querySelector('.duration');
+      const priceEl = card.querySelector('.room-price');
+      if (!type || !duration || !priceEl) return;
+
+      const nightPrice = parseFloat(priceEl.dataset.night) || 0;
+      const hourPrice = parseFloat(priceEl.dataset.hour) || 0;
+
+      function updatePrice(){
+        let d = parseFloat(duration.value);
+        if (!Number.isFinite(d) || d < 1) { d = 1; duration.value = 1; }
+        const base = (type.value === 'night') ? nightPrice : hourPrice;
+        const total = base * d;
+        priceEl.textContent = '$' + (Number.isInteger(total) ? total : total.toFixed(2));
+      }
+
+      // keep user-entered duration when switching pricing type
+      type.addEventListener('change', updatePrice);
+      duration.addEventListener('input', updatePrice);
+      updatePrice();
+    }catch(e){ /* ignore per-card errors */ }
+  });
+
+  /* ================= BASE STYLES ================= */
+  images.forEach(img => {
+    img.style.transition = "opacity 1s ease, transform 1s ease";
+    img.style.willChange = "opacity, transform";
+  });
+
+  /* ================= RANDOM ANIMATION ================= */
+  function animateAll() {
+    images.forEach(img => {
+      if (Math.random() > 0.6) {   // 40% chance per image
+        img.style.opacity = "0.4";
+        img.style.transform = "scale(1.08)";
+
+        setTimeout(() => {
+          img.style.opacity = "1";
+          img.style.transform = "scale(1)";
+        }, 900);
+      }
+    });
+  }
+
+  /* ================= RANDOM IMAGE SWAP ================= */
+  function swapRandomImages() {
+    const swapCount = Math.max(1, Math.floor(images.length * 0.3));
+
+    for (let i = 0; i < swapCount; i++) {
+      const img = images[Math.floor(Math.random() * images.length)];
+      const newSrc = imagePool[Math.floor(Math.random() * imagePool.length)];
+
+      img.style.opacity = "0";
+
+      setTimeout(() => {
+        img.src = newSrc + "?auto=format&fit=crop&w=900&q=60";
+        img.style.opacity = "1";
+      }, 800);
+    }
+  }
+
+  /* ================= TIMERS ================= */
+  setInterval(animateAll, 2500);     // animate frequently
+  setInterval(swapRandomImages, 5000); // swap images smoothly
+
+});
+</script>
+
+</body>
+</html>

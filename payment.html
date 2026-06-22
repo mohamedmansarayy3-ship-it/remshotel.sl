@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Payment | REMS HOTEL</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+body{font-family:Arial;background:#f4f6f8;padding:20px}
+.container{max-width:650px;margin:auto;background:#fff;padding:25px;border-radius:10px}
+h2,h3{text-align:center}
+
+.receipt{
+  background:#f9fafc;
+  border:3px dashed #0a7cff;
+  padding:15px;
+  border-radius:8px;
+  margin-bottom:20px;
+  font-size:14px
+}
+.receipt p{margin:6px 0}
+
+.instructions{
+  background:#eff0f3;
+  padding:15px;
+  border-left:10px solid #0a7cff;
+  margin-top:15px;
+  font-size:14px
+}
+
+label{font-weight:bold;margin-top:10px;display:block; font-size: 15px;}
+
+input[type="file"], input[type="text"]{
+  margin-top:10px;
+  width:100%;
+  padding:10px;
+  font-size: 14px;
+}
+
+button,select{
+  width:100%;
+  padding:12px;
+  font-size: 15px;
+  margin-top:15px
+}
+
+.hidden{display:none}
+.success{color:green;font-weight:bold;text-align:center}
+
+@media (max-width:600px){
+  .container{margin:15px;padding:18px}
+  button,select{font-size:20px}
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+<h2>Payment</h2>
+
+<!-- ===== RECEIPT ===== -->
+<div class="receipt">
+  <h3>Booking Receipt</h3>
+  <p><b>Name:</b> <span id="r_name"></span></p>
+  <p><b>Email:</b> <span id="r_email"></span></p>
+  <p><b>Phone:</b> <span id="r_phone"></span></p>
+  <p><b>Room:</b> <span id="r_room"></span></p>
+  <p><b>Check-in:</b> <span id="r_checkin"></span></p>
+  <p><b>Check-out:</b> <span id="r_checkout"></span></p>
+  <p><b>Total Amount:</b> $<span id="r_total"></span></p>
+</div>
+
+<!-- ===== PAYMENT METHOD ===== -->
+<select id="method" aria-label="Payment method">
+  <option value="">Select Payment Method</option>
+  <option value="bank">🏦 Bank Transfer</option>
+  <option value="afrimoney">📱 Afrimoney</option>
+  <option value="orange">📲 Orange Money</option>
+  <option value="qmoney">💳 QMoney</option>
+</select>
+
+<!-- ===== BANK ===== -->
+<div id="bank" class="instructions hidden">
+<b>🏦 Bank Transfer Procedure</b><br><br>
+1. Transfer the <b>exact amount</b> to:<br>
+<b>REMS HOTEL</b><br>
+Account No: <b>123456789</b><br><br>
+2. Upload your payment receipt below.<br>
+
+<label for="bankReceipt">Upload Bank Receipt</label>
+<input type="file" id="bankReceipt" accept="image/*,application/pdf">
+</div>
+
+<!-- ===== AFRIMONEY ===== -->
+<div id="afri" class="instructions hidden">
+<b>📱 Afrimoney Payment Procedure</b><br><br>
+1. Dial <b>*161#</b><br>
+2. Send Money to <b>+232 33 503 686</b><br>
+3. Confirm payment<br><br>
+
+<label for="afriTxn">Transaction ID</label>
+<input type="text" id="afriTxn" name="afriTxn">
+</div>
+
+<!-- ===== ORANGE MONEY ===== -->
+<div id="orange" class="instructions hidden">
+<b>📲 Orange Money Payment Procedure</b><br><br>
+1. Dial <b>#144#</b><br>
+2. Transfer to <b>+232 76 603 690</b><br>
+3. Confirm payment<br><br>
+
+<label for="orangeTxn">Transaction ID</label>
+<input type="text" id="orangeTxn" name="orangeTxn">
+</div>
+
+<!-- ===== QMONEY ===== -->
+<div id="qmoney" class="instructions hidden">
+<b>💳 QMoney Payment Procedure</b><br><br>
+1. Open QMoney App<br>
+2. Send to REMS HOTEL<br>
+3. Confirm payment<br><br>
+
+<label for="qmoneyTxn">Transaction ID</label>
+<input type="text" id="qmoneyTxn" name="qmoneyTxn">
+</div>
+
+<button id="payBtn" type="button" onclick="pay()">Confirm & Send Payment</button>
+
+<p id="status" class="success" role="status" aria-live="polite"></p>
+
+</div>
+
+<script>
+/* ================= LOAD BOOKING DATA ================= */
+// Resolve API base dynamically: try local mock addresses first, then same-origin fallback.
+let _resolvedApiBase = null;
+async function probeUrl(url, timeoutMs = 1800){
+  const controller = new AbortController();
+  const id = setTimeout(()=> controller.abort(), timeoutMs);
+  try{
+    const res = await fetch(url, { method: 'GET', mode: 'cors', signal: controller.signal });
+    clearTimeout(id);
+    // reachable even if 404 — treat as reachable
+    return true;
+  }catch(e){
+    clearTimeout(id);
+    return false;
+  }
+}
+
+async function resolveApiBase(){
+  if (_resolvedApiBase !== null) return _resolvedApiBase;
+  const candidates = [
+    'http://127.0.0.1:5000',
+    'http://localhost:5000',
+    '' // same-origin (relative)
+  ];
+
+  for (const base of candidates){
+    const test = (base === '') ? '/api/bookings' : (base + '/api/bookings');
+    try{
+      const ok = await probeUrl(test);
+      if (ok) { _resolvedApiBase = base; console.log('Using API base:', base || '(same-origin)'); return base; }
+    }catch(e){ /* continue */ }
+  }
+  // last-resort: empty
+  _resolvedApiBase = '';
+  return '';
+}
+
+// read bookingData from sessionStorage (if missing, try query params fallback)
+let stored = sessionStorage.getItem("bookingData");
+if (!stored) {
+  // try to construct from URL params (fallback)
+  const qp = Object.fromEntries(new URL(location.href).searchParams.entries());
+  if (Object.keys(qp).length) {
+    stored = JSON.stringify(qp);
+    sessionStorage.setItem('bookingData', stored);
+  }
+}
+
+if (!stored) {
+  alert("Booking session expired. Please book again.");
+  location.href = "booking.html";
+  throw new Error("No bookingData in sessionStorage");
+}
+
+const data = JSON.parse(stored);
+
+/* ================= ELEMENT REFERENCES ================= */
+const r_name = document.getElementById("r_name");
+const r_email = document.getElementById("r_email");
+const r_phone = document.getElementById("r_phone");
+const r_room = document.getElementById("r_room");
+const r_checkin = document.getElementById("r_checkin");
+const r_checkout = document.getElementById("r_checkout");
+const r_total = document.getElementById("r_total");
+
+const method = document.getElementById("method");
+const bank = document.getElementById("bank");
+const afri = document.getElementById("afri");
+const orange = document.getElementById("orange");
+const qmoney = document.getElementById("qmoney");
+
+const bankReceipt = document.getElementById("bankReceipt");
+const afriTxn = document.getElementById("afriTxn");
+const orangeTxn = document.getElementById("orangeTxn");
+const qmoneyTxn = document.getElementById("qmoneyTxn");
+
+const status = document.getElementById("status");
+const payBtn = document.getElementById("payBtn");
+
+// store default button text once
+const DEFAULT_PAY_BTN_TEXT = payBtn ? payBtn.textContent : "Confirm & Send Payment";
+
+/* ================= FILL RECEIPT ================= */
+r_name.textContent = data.name || "";
+r_email.textContent = data.email || "";
+r_phone.textContent = data.phone || "";
+r_room.textContent = `${data.room || ""} (${data.number || ""})`;
+r_checkin.textContent = data.checkin || "";
+r_checkout.textContent = data.checkout || "—";
+// `r_total` is placed after a literal `$` in the HTML, so write only the numeric portion
+r_total.textContent = data.totalAmount
+  ? Number(data.totalAmount).toFixed(2)
+  : "0.00";
+
+/* ================= PAYMENT METHOD SWITCH ================= */
+method.addEventListener("change", () => {
+  bank.classList.add("hidden");
+  afri.classList.add("hidden");
+  orange.classList.add("hidden");
+  qmoney.classList.add("hidden");
+
+  if (method.value === "bank") bank.classList.remove("hidden");
+  if (method.value === "afrimoney") afri.classList.remove("hidden");
+  if (method.value === "orange") orange.classList.remove("hidden");
+  if (method.value === "qmoney") qmoney.classList.remove("hidden");
+});
+
+/* ================= PAYMENT SUBMIT ================= */
+async function pay() {
+  if (!method.value) {
+    alert("Select payment method");
+    return;
+  }
+
+  // basic disable UI
+  payBtn.disabled = true;
+  payBtn.textContent = "Submitting...";
+
+  data.paymentMethod = method.value;
+
+  // validate inputs per method
+  if (method.value === "bank") {
+    if (!bankReceipt || !bankReceipt.files || !bankReceipt.files[0]) {
+      alert("Upload bank receipt");
+      restoreButton();
+      return;
+    }
+    const file = bankReceipt.files[0];
+    const maxBytes = 5 * 1024 * 1024; // 5MB
+    if (file.size > maxBytes) {
+      alert("Receipt file must be 5MB or smaller.");
+      restoreButton();
+      return;
+    }
+    const allowed = ["image/png","image/jpeg","application/pdf","image/jpg"];
+    if (!allowed.includes(file.type) && file.type !== "") {
+      alert("Unsupported file type. Use PNG/JPG/PDF.");
+      restoreButton();
+      return;
+    }
+    data.bankReceiptUploaded = true;
+  }
+
+  if (method.value === "afrimoney") {
+    if (!afriTxn || !afriTxn.value || afriTxn.value.trim().length < 3) {
+      alert("Enter a valid Afrimoney Transaction ID");
+      restoreButton();
+      return;
+    }
+    data.transactionId = afriTxn.value.trim();
+  }
+
+  if (method.value === "orange") {
+    if (!orangeTxn || !orangeTxn.value || orangeTxn.value.trim().length < 3) {
+      alert("Enter a valid Orange Money Transaction ID");
+      restoreButton();
+      return;
+    }
+    data.transactionId = orangeTxn.value.trim();
+  }
+
+  if (method.value === "qmoney") {
+    if (!qmoneyTxn || !qmoneyTxn.value || qmoneyTxn.value.trim().length < 3) {
+      alert("Enter a valid QMoney Transaction ID");
+      restoreButton();
+      return;
+    }
+    data.transactionId = qmoneyTxn.value.trim();
+  }
+
+  /* ===== SEND TO BACKEND ===== */
+  // use AbortController for timeout
+  const controller = new AbortController();
+  const timeout = setTimeout(()=> controller.abort(), 15000); // 15s
+
+  try {
+    let res;
+    const API_BASE = await resolveApiBase();
+
+    // build a safe endpoint: use API_BASE if provided, otherwise use location.origin
+    let endpoint;
+    if (API_BASE) {
+      endpoint = API_BASE.replace(/\/$/, '') + '/api/bookings';
+    } else {
+      if (location.protocol === 'file:') {
+        throw new Error('Cannot contact API when the page is opened via file://. Serve the site over http:// (live-server or similar).');
+      }
+      endpoint = location.origin.replace(/\/$/, '') + '/api/bookings';
+    }
+
+    // If bank receipt uploaded, use FormData
+    if (method.value === "bank" && bankReceipt.files[0]) {
+      const form = new FormData();
+      form.append("bankReceipt", bankReceipt.files[0]);
+      form.append("data", JSON.stringify(data));
+      res = await fetch(endpoint, {
+        method: "POST",
+        body: form,
+        signal: controller.signal
+      });
+    } else {
+      res = await fetch(endpoint, {
+        method: "POST",
+        headers: {"Content-Type":"application/json"},
+        body: JSON.stringify(data),
+        signal: controller.signal
+      });
+    }
+
+    // clear timeout on success path
+    clearTimeout(timeout);
+
+    if (!res.ok) {
+      const errText = await res.text().catch(()=>res.statusText || String(res.status));
+      alert("Payment submission failed: " + (errText || res.status));
+      restoreButton();
+      return;
+    }
+
+    // Try to parse JSON, but be resilient
+    let savedBooking = null;
+    try {
+      savedBooking = await res.json();
+    } catch (e) {
+      savedBooking = { id: null };
+    }
+
+    if (!savedBooking || !savedBooking.id) {
+      alert("Payment submitted but server did not return a booking id. Contact support.");
+      restoreButton();
+      return;
+    }
+
+    // persist and show success
+    // persist booking in sessionStorage for immediate user flow
+    sessionStorage.removeItem("bookingData");
+    sessionStorage.setItem("bookingId", String(savedBooking.id));
+
+    // Also append booking to localStorage "bookings" so admin.html can read it.
+    try {
+      const existing = JSON.parse(localStorage.getItem('bookings') || '[]');
+      const record = {
+        id: savedBooking.id,
+        timestamp: new Date().toISOString(),
+        room: data.room || data.roomName || '',
+        roomNumber: data.number || data.roomId || '',
+        name: data.name || '',
+        email: data.email || '',
+        phone: data.phone || '',
+        totalAmount: data.totalAmount || data.amount || 0,
+        paymentMethod: data.paymentMethod || '',
+        raw: data
+      };
+      existing.push(record);
+      localStorage.setItem('bookings', JSON.stringify(existing));
+      // notify other tabs/pages
+      localStorage.setItem('bookings_updated', String(Date.now()));
+    } catch (e) {
+      console.warn('Failed to persist booking to localStorage', e);
+    }
+
+    status.textContent = "✅ Payment submitted successfully.";
+    payBtn.textContent = "Submitted";
+    payBtn.disabled = true;
+
+  } catch (err) {
+    // ensure timeout cleared
+    clearTimeout(timeout);
+    if (err.name === "AbortError") {
+      alert("Request timed out. Please try again.");
+    } else {
+      console.error('Payment submit error:', err);
+      alert("Network error while submitting payment: " + (err.message || String(err)) + ". Please try again.");
+    }
+    restoreButton();
+  }
+}
+
+function restoreButton(){
+  payBtn.disabled = false;
+  // restore using stored default text
+  payBtn.textContent = DEFAULT_PAY_BTN_TEXT;
+}
+</script>
+</body>
+</html>

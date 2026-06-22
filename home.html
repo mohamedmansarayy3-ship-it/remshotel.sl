@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>REMS HOTEL</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<!-- Production / SEO / Performance -->
+<meta name="description" content="REMS HOTEL — luxury rooms, modern hospitality and personalised service in Freetown. Book rooms, check availability, and pay securely.">
+<meta name="theme-color" content="#0b1c33">
+<link rel="icon" href="favicon.ico" type="image/x-icon">
+
+<!-- Font performance hints -->
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;700&family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+
+<!-- Minimal structured data -->
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"Hotel","name":"REMS HOTEL","description":"Luxury rooms and modern hospitality in Freetown.","address":{"@type":"PostalAddress","addressLocality":"Freetown","addressCountry":"SL"},"telephone":"+232-XXX-XXX","email":"mansaraym246@gmail.com","url":""}
+</script>
+
+<style>
+:root{
+  --blue:#0b1c33;
+  --gold:#d4af37;
+  --white:#ffffff;
+  --glass:rgba(11,28,51,.65);
+  --blur:blur(12px);
+}
+
+*{margin:0;padding:0;box-sizing:border-box}
+
+body{
+  font-family:"Inter",sans-serif;
+  /* luxury background with subtle dark gradient for readability */
+  background:
+    linear-gradient(rgba(3,8,18,0.45), rgba(3,8,18,0.55)),
+    url("https://images.unsplash.com/photo-1501117716987-c8e11141f3b1?auto=format&fit=crop&w=1800&q=80") center/cover no-repeat fixed;
+  background-size: cover;
+  color: #fff;
+  min-height: 100vh;
+}
+
+/* HEADER (updated for separation & contrast) */
+.lux-header{
+  position:fixed;
+  top:0;
+  width:100%;
+  z-index:1200;
+  /* stronger translucent background to separate from hero */
+  background:linear-gradient(180deg, rgba(7,15,28,0.85), rgba(7,15,28,0.65));
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border-bottom:1px solid rgba(255,255,255,0.06);
+  box-shadow: 0 6px 18px rgba(0,0,0,0.35);
+}
+
+/* container layout inside header */
+.lux-container{
+  position:relative;
+  max-width:1300px;
+  margin:auto;
+  height:70px;
+  padding:10px 24px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:16px;
+  z-index:2;
+}
+
+/* logo area */
+.lux-logo{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  font-size:20px;
+  line-height:1;
+  font-weight:700;
+  color:#fff;
+  margin:0;
+}
+.lux-logo span { display:block; }
+.lux-logo .brand-accent{ color:var(--gold); font-family:"Playfair Display", serif; }
+
+/* nav (center) */
+.lux-nav{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  flex:1;
+}
+.lux-nav ul{
+  list-style:none;
+  display:flex;
+  gap:16px;
+  align-items:center;
+  margin:0;
+  padding:0;
+}
+.lux-nav a{
+  color:#fff;
+  text-decoration:none;
+  font-size:14px;
+  padding:8px 12px;
+  border-radius:8px;
+  transition:background .18s, color .18s, transform .12s;
+}
+.lux-nav a:hover,
+.lux-nav a:focus{
+  background: rgba(255,255,255,0.06);
+  color:var(--gold);
+  transform:translateY(-1px);
+  outline: none;
+}
+
+/* action area (right) */
+.lux-actions{ display:flex; align-items:center; gap:12px; }
+
+/* mobile menu button */
+.menu-btn{
+  display:none;
+  font-size:22px;
+  background:rgba(255,255,255,0.04);
+  border:1px solid rgba(255,255,255,0.06);
+  color:#fff;
+  padding:8px 12px;
+  border-radius:8px;
+  cursor:pointer;
+}
+
+/* HERO */
+.hero-space{
+  position:relative;
+  height:100vh;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  text-align:center;
+  overflow:hidden;
+}
+
+/* background image layer (fades in/out). stays under the overlay and text */
+.hero-space::after{
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: url("./Rems.png"); /* use explicit local path */
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  opacity: 0;               /* start hidden until image is preloaded */
+  z-index: 0;               /* sits below overlay (which is z-index:1) and text (z-index:2) */
+  transition: opacity .5s ease;
+  pointer-events: none;
+}
+
+/* when preloaded, show immediately (so it appears like before) */
+.hero-space.bg-visible::after{
+  opacity: 1;
+}
+
+/* fade keyframes — only applied after preload via .bg-ready class */
+@keyframes heroFade {
+  0%   { opacity: 0; }
+  10%  { opacity: 1; }
+  60%  { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+/* when image is ready, animate opacity loop */
+.hero-space.bg-ready::after{
+  animation: heroFade 8s ease-in-out infinite;
+}
+
+/* SECTIONS */
+section{
+  padding:90px 50px;
+  background:#fff;
+}
+
+/* Ensure body copy inside the Rooms section is black for readability */
+#rooms,
+#rooms .section-intro,
+#rooms .rooms-info,
+#rooms .info-box,
+#rooms .info-box p,
+#rooms .info-box ul,
+#rooms .info-box ol,
+#rooms .info-box li,
+#rooms .info-box a {
+  color: #111; /* dark text on white background */
+}
+
+/* Keep headings styled as before (h2 uses var(--gold)) */
+h2{
+  font-family:"Playfair Display",serif;
+  text-align:center;
+  font-size:38px;
+  color:var(--gold);
+  margin-bottom:20px;
+}
+
+.section-intro{
+  text-align:center;
+  max-width:800px;
+  margin:0 auto 40px;
+  color:#666;
+}
+
+/* BUTTON STYLE (Explore Rooms) */
+.explore-btn{
+  display:inline-block;
+  margin:20px auto 0;
+  padding:12px 22px;
+  background:var(--blue);
+  color:#fff;
+  border-radius:8px;
+  text-decoration:none;
+  transition:.3s;
+}
+
+.explore-btn:hover{
+  background:var(--gold);
+  color:#000;
+}
+
+/* CARDS */
+.rooms-info{
+  max-width:900px;
+  margin:auto;
+  display:grid;
+  gap:25px;
+}
+
+.info-box{
+  padding:28px;
+  border-radius:14px;
+  border:1px solid #eee;
+  box-shadow:0 10px 25px rgba(0,0,0,.06);
+  transition:.3s;
+}
+
+.info-box:hover{
+  transform:translateY(-6px);
+  border-left:4px solid var(--gold);
+}
+
+/* FOOTER */
+footer{
+  background:var(--blue);
+  color:#ccc;
+  padding:60px 50px;
+}
+
+.footer-grid{
+  max-width:1200px;
+  margin:auto;
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+  gap:30px;
+}
+
+footer h4{color:#fff}
+
+footer a{
+  color:#ccc;
+  text-decoration:none;
+  display:block;
+  margin:6px 0;
+}
+
+footer a:hover{color:var(--gold)}
+
+.copy{
+  text-align:center;
+  margin-top:30px;
+  font-size:12px;
+  color:#888;
+}
+
+/* POPUP DISCOUNT: styles */
+#discountModalBack {
+  position: fixed;
+  inset: 0;
+  background: rgba(2,6,12,0.6);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 1400;
+}
+#discountModalBack.show { display: flex; animation: fadeIn .25s ease; }
+#discountModal {
+  width: 320px;
+  max-width: calc(100% - 40px);
+  background: #fff;
+  color: #111;
+  border-radius: 12px;
+  padding: 18px;
+  box-shadow: 0 12px 40px rgba(2,6,12,0.5);
+  text-align: left;
+  transform: translateY(8px);
+  opacity: 0;
+  transition: opacity .22s ease, transform .22s ease;
+}
+#discountModalBack.show #discountModal { transform: translateY(0); opacity: 1; }
+#discountModal h3 { margin:0 0 8px 0; font-family: "Playfair Display", serif; color:var(--gold); }
+#discountModal p { margin:0 0 12px 0; font-size:14px; color:#222; }
+#discountModal .actions { display:flex; gap:8px; justify-content:flex-end; margin-top:8px; }
+.btn-claim {
+  background: linear-gradient(135deg,var(--gold), #b8962e);
+  border:none; padding:8px 12px; border-radius:8px; cursor:pointer; color:#000; font-weight:600;
+}
+.btn-close {
+  background: transparent; border:1px solid #ddd; padding:8px 10px; border-radius:8px; cursor:pointer; color:#333;
+}
+
+/* small fade keyframe */
+@keyframes fadeIn { from { opacity:0 } to { opacity:1 } }
+
+/* RESPONSIVE */
+@media(max-width:768px){
+  .lux-nav{ position:absolute; top:70px; left:0; right:0; background:rgba(6,10,18,0.96); padding:12px 18px; border-top:1px solid rgba(255,255,255,0.03); display:none; }
+  .lux-nav.open{ display:block; }
+  .lux-nav ul{ flex-direction:column; gap:10px; }
+  .menu-btn{ display:inline-flex; }
+  .lux-container{ height:auto; padding:10px 16px; }
+  section{padding:70px 20px}
+  .hero-text h2{font-size:34px}
+}
+</style>
+</head>
+
+<body>
+  <!-- skip link for keyboard users -->
+  <a href="#rooms" class="skip-link" style="position:absolute;left:-9999px;top:auto;overflow:hidden;" onfocus="this.style.left='8px';this.style.background='#fff';this.style.color='#000';this.style.padding='8px';this.style.zIndex='9999'">Skip to content</a>
+
+  <!-- ========= PREMIUM HOTEL HEADER ========= -->
+<header class="lux-header" id="luxHeader" role="banner">
+  <div class="lux-overlay" aria-hidden="true"></div>
+
+  <div class="lux-container">
+    <!-- Logo (left) -->
+    <div class="lux-logo" aria-hidden="false">
+      <div class="logo-slot" aria-hidden="true"></div>
+      <div>
+        <span class="brand-accent">REMS</span>
+        <span style="font-size:12px;opacity:.9">HOTEL · Life Style & Comfort</span>
+      </div>
+    </div>
+
+    <!-- Navigation (center) -->
+    <nav class="lux-nav" id="siteNav" aria-label="Primary navigation">
+      <ul id="menu" role="menu" aria-hidden="false">
+        <li role="none"><a role="menuitem" href="index.html">Explore Rooms</a></li>
+        <li role="none"><a role="menuitem" href="#">Facilities</a></li>
+        <li role="none"><a role="menuitem" href="admin.html">Admin use only</a></li>
+        <li role="none"><a role="menuitem" href="#contact">Contact</a></li>
+      </ul>
+    </nav>
+
+    <!-- Actions / mobile menu toggle (right) -->
+    <div class="lux-actions">
+      <a class="explore-btn" href="index.html" style="padding:8px 14px;font-size:14px">Book Now</a>
+      <button class="menu-btn" id="menuBtn" aria-controls="menu" aria-expanded="false" aria-label="Toggle navigation">☰</button>
+    </div>
+  </div>
+</header>
+
+<!-- HERO -->
+<div class="hero-space" id="hero">
+  <div class="hero-text">
+    <h2>Luxury Redefined</h2>
+    <p>Experience premium comfort and modern hospitality at REMS HOTEL.</p>
+    <!-- removed the hidden <img> — background handled via CSS -->
+  </div>
+</div>
+
+<!-- ROOMS -->
+<section id="rooms">
+  <h2>Explore Our Rooms</h2>
+
+  <p class="section-intro">
+    Discover elegantly designed rooms tailored for comfort, privacy, and elegant luxury experiences.
+  </p>
+
+  <div style="text-align:center;">
+    <a class="explore-btn" href="index.html">View Room Details</a>
+  </div>
+
+  <div class="rooms-info" style="margin-top:40px;">
+    <div class="info-box">
+      <h3>Luxury Stay Experience</h3>
+      <p>Every room is designed with premium comfort, modern lighting, and elegant interiors. Enjoy plush bedding, refined finishes and thoughtful in-room amenities to make your stay effortless.</p>
+      <ul>
+        <li>King-sized or twin beds with premium linens</li>
+        <li>Complimentary high-speed Wi‑Fi and smart TV</li>
+        <li>24/7 room service and daily housekeeping</li>
+      </ul>
+    </div>
+
+    <div class="info-box">
+      <h3>Peace & Comfort</h3>
+      <p>Enjoy a calm environment perfect for relaxation, business, or long stays. Rooms are soundproofed and equipped with adjustable lighting and ergonomic workspaces for productivity and rest.</p>
+      <p style="margin-top:8px;">Amenities tailored for your convenience:</p>
+      <ol>
+        <li>Complimentary breakfast buffet and in-house dining options</li>
+        <li>On-site laundry and express dry-cleaning</li>
+        <li>Flexible check-in/check-out options and concierge service</li>
+      </ol>
+    </div>
+  </div>
+</section>
+
+<!-- DISCOUNT POPUP -->
+<div id="discountModalBack" aria-hidden="true" role="dialog" aria-labelledby="discountTitle" aria-modal="true">
+    <div id="discountModal">
+      <h3 id="discountTitle">Special Welcome Offer</h3>
+      <p>Book now and get 15% off your first stay. Limited time only — grab it before it's gone!</p>
+      <div style="font-size:12px;color:#444;margin-bottom:8px">Use code: WELCOME15 at checkout.</div>
+      <div class="actions">
+        <button class="btn-close" id="discountClose">Close</button>
+        <button class="btn-claim" id="discountClaim">Claim Discount</button>
+      </div>
+    </div>
+  </div>
+
+<!-- FOOTER -->
+<footer id="contact">
+  <div class="footer-grid">
+
+    <div>
+      <h4>REMS HOTEL</h4>
+      <p>Luxury and comfort, redefined.</p>
+    </div>
+
+    <div>
+      <h4>Quick Links</h4>
+      <a href="index.html">Explore Rooms</a>
+      <a href="#">Facilities</a>
+    </div>
+
+    <div>
+      <h4>Contact</h4>
+      <p>Freetown, Sierra Leone</p>
+      <p>+232 33 503 686</p>
+      <p>mansaraym246@gmail.com</p>
+      <p>Address: 123 Main Street, Freetown, Sierra Leone</p>
+    </div>
+
+  </div>
+
+  <div class="copy">
+    © 2026 REMS HOTEL · All Rights Reserved
+  </div>
+</footer>
+
+<script>
+/* improved accessible menu toggle (no inline onclick) - updated to control .lux-nav */
+(function(){
+  const menuBtn = document.getElementById('menuBtn');
+  const nav = document.querySelector('.lux-nav');
+  const menu = document.getElementById('menu');
+
+  if (!menuBtn || !nav || !menu) return;
+
+  function setMenuOpen(open){
+    nav.classList.toggle('open', open);
+    menu.classList.toggle('show', open); // legacy class used elsewhere
+    menuBtn.setAttribute('aria-expanded', String(Boolean(open)));
+    nav.setAttribute('aria-hidden', String(!open));
+    if (open) {
+      const first = menu.querySelector('a');
+      if (first) first.focus();
+    }
+  }
+
+  // Toggle menu on button click
+  menuBtn.addEventListener('click', function(){
+    const isOpen = nav.classList.contains('open');
+    setMenuOpen(!isOpen);
+  });
+
+  // Close menu when clicking outside (improved)
+  document.addEventListener('click', function(e){
+    const isMenuBtn = menuBtn.contains(e.target);
+    const isNav = nav.contains(e.target);
+    if (!isMenuBtn && !isNav) {
+      setMenuOpen(false);
+    }
+  });
+
+  // Keyboard navigation for menu items
+  menu.addEventListener('keydown', function(e){
+    if (e.key === 'Tab') {
+      const focusable = menu.querySelectorAll('a');
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (e.shiftKey) { // Shift + Tab
+        if (document.activeElement === first) {
+          e.preventDefault();
+          setMenuOpen(false);
+          menuBtn.focus();
+        }
+      } else { // Tab
+        if (document.activeElement === last) {
+          e.preventDefault();
+          first.focus();
+        }
+      }
+    }
+  });
+
+  // Close menu on Esc key
+  document.addEventListener('keydown', function(e){
+    if (e.key === 'Escape') {
+      setMenuOpen(false);
+      menuBtn.focus();
+    }
+  });
+
+  // Initial focus on menu button
+  menuBtn.focus();
+})();
+
+/* Preload hero background and show it immediately, then start fade animation */
+(function(){
+  const hero = document.getElementById('hero');
+  if (!hero) return;
+  const img = new Image();
+  img.src = './Rems.png';
+  img.onload = function(){
+    // make background visible immediately (like before)
+    hero.classList.add('bg-visible');
+    // small delay then start the fade loop
+    setTimeout(()=> hero.classList.add('bg-ready'), 600);
+  };
+  img.onerror = function(){
+    // fallback: show the background slot so page isn't empty
+    hero.classList.add('bg-visible');
+    console.warn('Failed to preload hero background Rems.png');
+  };
+})();
+</script>
+</body>
+</html>

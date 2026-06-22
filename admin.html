@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Admin Dashboard | VIP Hotel</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+ <a href="status.html"></a>
+
+<style>
+  /* ================= ADMIN AUTH OVERLAY ================= */
+#adminAuth {
+  position: fixed;
+  inset: 0;
+  background: linear-gradient(135deg, #08162a, #0b1c33);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+
+.auth-box {
+  width: 100%;
+  max-width: 360px;
+  background: #12294a;
+  border-radius: 12px;
+  padding: 25px;
+  box-shadow: 0 20px 40px rgba(0,0,0,.5);
+  animation: fadeIn .4s ease;
+}
+
+.auth-box h2 {
+  text-align: center;
+  margin-bottom: 20px;
+  color: #fff;
+}
+
+.auth-box label {
+  display: block;
+  font-size: 13px;
+  margin-bottom: 6px;
+  color: #cbd5e1;
+}
+
+.auth-box input {
+  width: 100%;
+  padding: 10px;
+  border-radius: 8px;
+  border: none;
+  background: #0a1e3a;
+  color: #fff;
+  font-size: 14px;
+  margin-bottom: 15px;
+}
+
+.auth-box input:focus {
+  outline: 2px solid #0a7cff;
+}
+
+.auth-box button {
+  width: 100%;
+  padding: 11px;
+  background: #0a7cff;
+  border: none;
+  border-radius: 8px;
+  color: #fff;
+  font-size: 14px;
+  cursor: pointer;
+  transition: .25s;
+}
+
+.auth-box button:hover {
+  background: #005ecb;
+}
+
+.auth-error {
+  color: #ff8c8c;
+  font-size: 13px;
+  text-align: center;
+  margin-top: 10px;
+}
+
+/* ================= ANIMATION ================= */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+body{
+  font-family:Segoe UI;
+  background:#0b1c33;
+  color:#fff;
+  margin:0;
+  padding:20px
+}
+h1{margin-bottom:20px}
+
+table{
+  width:100%;
+  border-collapse:collapse;
+  background:#12294a
+}
+td,th{
+  border:1px solid #2a3f66;
+  padding:10px;
+  font-size:14px;
+  text-align:left
+}
+th{background:#0a1e3a}
+
+button{
+  padding:6px 10px;
+  border:none;
+  border-radius:6px;
+  cursor:pointer;
+  font-size:12px
+}
+.confirm{background:#2e7d32;color:#fff}
+.reject{background:#c62828;color:#fff}
+select{
+  padding:5px;
+  border-radius:6px;
+  border:none
+}
+
+.status{font-weight:600}
+.confirmed{color:#7CFF7C}
+.rejected{color:#FF7C7C}
+.payment_submitted{color:#FFD27C}
+</style>
+</head>
+
+<body>
+  <script>
+/* ================= ADMIN AUTH (ALWAYS ASK) ================= */
+(function adminAuth(){
+  const ADMIN_USER = "admin";
+  const ADMIN_PASS = "vip123";
+
+  const user = prompt("Admin Username:");
+  const pass = prompt("Admin Password:");
+
+  if (user !== ADMIN_USER || pass !== ADMIN_PASS) {
+    alert("Unauthorized access");
+    window.location.href = "home.html"; // redirect away
+  }
+})();
+</script>
+
+<h1>Admin – Booking Requests</h1>
+
+<table>
+<thead>
+<tr>
+</tr>
+</thead>
+<tbody id="rows"></tbody>
+</table>
+
+<!-- Details / Controls -->
+<template id="row-template">
+  <tr>
+    <td class="room"></td>
+    <td class="number"></td>
+    <td class="type"></td>
+    <td class="duration"></td>
+    <td class="price"></td>
+    <td class="email"></td>
+    <td class="id"></td>
+    <td class="date"></td>
+    <td class="status"></td>
+    <td class="actions"></td>
+  </tr>
+</template>
+
+</tr>
+</thead>
+<tbody id="rows"></tbody>
+</table>
+
+<script>
+const rows = document.getElementById("rows");
+const rowTemplate = document.getElementById('row-template');
+let bookings = [];
+
+/* ================= LOAD BOOKINGS ================= */
+async function loadBookings(){
+  const res = await fetch("http://127.0.0.1:5000/api/bookings");
+  bookings = await res.json();
+  render();
+}
+
+/* ================= RENDER ================= */
+function render(){
+  rows.innerHTML = "";
+  bookings.forEach(b=>{
+    const clone = rowTemplate.content.cloneNode(true);
+    clone.querySelector('.room').textContent = b.room || '';
+    clone.querySelector('.number').textContent = b.number || '';
+    clone.querySelector('.type').textContent = b.pricingType || b.type || '';
+    clone.querySelector('.duration').textContent = b.duration || '';
+    clone.querySelector('.price').textContent = '$' + (b.total || b.totalAmount || '0');
+    clone.querySelector('.email').textContent = b.email || b.emailAddress || '';
+    clone.querySelector('.id').textContent = b.id || '';
+    clone.querySelector('.date').textContent = b.createdAt ? new Date(b.createdAt).toLocaleString() : '';
+    const statusTd = clone.querySelector('.status');
+    statusTd.textContent = b.status || '';
+    statusTd.className = 'status ' + ((b.status||'').toLowerCase());
+
+    // actions
+    const actions = clone.querySelector('.actions');
+    if (b.status === 'PAYMENT_SUBMITTED'){
+      const btn = document.createElement('button');
+      btn.className = 'confirm'; btn.textContent = 'Confirm';
+      btn.addEventListener('click', ()=> confirmBooking(b.id));
+      actions.appendChild(btn);
+
+      actions.appendChild(document.createElement('br'));
+      actions.appendChild(document.createElement('br'));
+
+      const sel = document.createElement('select'); sel.id = `reason-${b.id}`;
+      const opt1 = document.createElement('option'); opt1.value = 'Room already booked, try another'; opt1.textContent = 'Room already booked, try another';
+      const opt2 = document.createElement('option'); opt2.value = 'Check back later'; opt2.textContent = 'Check back later';
+      sel.appendChild(opt1); sel.appendChild(opt2);
+      actions.appendChild(sel);
+
+      actions.appendChild(document.createElement('br'));
+      actions.appendChild(document.createElement('br'));
+
+      const rj = document.createElement('button'); rj.className = 'reject'; rj.textContent = 'Reject';
+      rj.addEventListener('click', ()=> rejectBooking(b.id));
+      actions.appendChild(rj);
+    } else if (b.status === 'Rejected'){
+      const small = document.createElement('small'); small.textContent = b.reason || '';
+      actions.appendChild(small);
+    } else {
+      actions.textContent = '—';
+    }
+
+    // Resend email button (always available if there's an email)
+    if (b.email){
+      actions.appendChild(document.createElement('br'));
+      actions.appendChild(document.createElement('br'));
+      const resend = document.createElement('button'); resend.textContent = 'Resend Email';
+      resend.addEventListener('click', ()=> resendEmail(b.id, resend));
+      actions.appendChild(resend);
+    }
+
+    rows.appendChild(clone);
+  });
+}
+
+/* ================= CONFIRM ================= */
+async function confirmBooking(id){
+  const res = await fetch(`http://127.0.0.1:5000/api/bookings/${id}`,{
+    method:"PATCH",
+    headers:{ "Content-Type":"application/json" },
+    body: JSON.stringify({ status:"Confirmed" })
+  });
+  if (!res.ok) { alert('Failed to confirm booking'); return; }
+  loadBookings();
+}
+
+/* ================= REJECT ================= */
+async function rejectBooking(id){
+  const reason = document.getElementById(`reason-${id}`).value;
+  const res = await fetch(`http://127.0.0.1:5000/api/bookings/${id}`,{
+    method:"PATCH",
+    headers:{ "Content-Type":"application/json" },
+    body: JSON.stringify({
+      status:"Rejected",
+      reason
+    })
+  });
+  if (!res.ok) { alert('Failed to reject booking'); return; }
+  loadBookings();
+}
+
+/* ================= RESEND EMAIL ================= */
+async function resendEmail(id, btn){
+  if (btn) { btn.disabled = true; btn.textContent = 'Sending...'; }
+  try{
+    const res = await fetch(`http://127.0.0.1:5000/api/bookings/${id}/resend`, { method: 'POST' });
+    if (!res.ok) { alert('Failed to resend email'); return; }
+    const json = await res.json();
+    alert(json.message || 'Email sent');
+  }catch(e){
+    console.error(e);
+    alert('Network error while resending email');
+  }finally{
+    if (btn) { btn.disabled = false; btn.textContent = 'Resend Email'; }
+  }
+}
+
+/* ================= INIT ================= */
+loadBookings();
+</script>
+
+</body>
+</html>
