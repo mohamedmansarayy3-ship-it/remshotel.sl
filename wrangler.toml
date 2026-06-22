@@ -1,12 +1,5 @@
-[build]
-command = ""
+name = "rems-hotel"
+compatibility_date = "2026-06-22"
 
-name = "rems-api-proxy"
-type = "javascript"
-account_id = "YOUR_ACCOUNT_ID"
-workers_dev = true
-compatibility_date = "2026-06-21"
-
-[[routes]]
-pattern = "example.com/api/*"
-zone_id = "YOUR_ZONE_ID"
+[assets]
+directory = "./public"
