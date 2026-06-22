@@ -1,9 +1,9 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>Admin Dashboard | VIP Hotel</title>
+<title>Admin Dashboard | REMS HOTEL</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
- <a href="status.html"></a>
+<meta charset="UTF-8">
 
 <style>
   /* ================= ADMIN AUTH OVERLAY ================= */
@@ -83,13 +83,15 @@
   from { opacity: 0; transform: translateY(12px); }
   to   { opacity: 1; transform: translateY(0); }
 }
+
 body{
-  font-family:Segoe UI;
+  font-family: "Segoe UI", Arial, sans-serif;
   background:#0b1c33;
   color:#fff;
   margin:0;
   padding:20px
 }
+
 h1{margin-bottom:20px}
 
 table{
@@ -97,12 +99,14 @@ table{
   border-collapse:collapse;
   background:#12294a
 }
+
 td,th{
   border:1px solid #2a3f66;
   padding:10px;
   font-size:14px;
   text-align:left
 }
+
 th{background:#0a1e3a}
 
 button{
@@ -112,8 +116,10 @@ button{
   cursor:pointer;
   font-size:12px
 }
+
 .confirm{background:#2e7d32;color:#fff}
 .reject{background:#c62828;color:#fff}
+
 select{
   padding:5px;
   border-radius:6px;
@@ -131,6 +137,9 @@ select{
   <script>
 /* ================= ADMIN AUTH (ALWAYS ASK) ================= */
 (function adminAuth(){
+  // WARNING: For production, use proper backend authentication
+  // Do NOT use plain-text credentials in frontend code
+  // These are placeholder values - implement proper session auth
   const ADMIN_USER = "admin";
   const ADMIN_PASS = "vip123";
 
@@ -139,7 +148,7 @@ select{
 
   if (user !== ADMIN_USER || pass !== ADMIN_PASS) {
     alert("Unauthorized access");
-    window.location.href = "home.html"; // redirect away
+    window.location.href = "home.html";
   }
 })();
 </script>
@@ -149,6 +158,16 @@ select{
 <table>
 <thead>
 <tr>
+  <th>Room</th>
+  <th>Number</th>
+  <th>Type</th>
+  <th>Duration</th>
+  <th>Price</th>
+  <th>Email</th>
+  <th>ID</th>
+  <th>Date</th>
+  <th>Status</th>
+  <th>Actions</th>
 </tr>
 </thead>
 <tbody id="rows"></tbody>
@@ -169,11 +188,6 @@ select{
     <td class="actions"></td>
   </tr>
 </template>
-
-</tr>
-</thead>
-<tbody id="rows"></tbody>
-</table>
 
 <script>
 const rows = document.getElementById("rows");

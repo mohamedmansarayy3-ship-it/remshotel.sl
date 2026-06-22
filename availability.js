@@ -1,5 +1,10 @@
 // availability.js
-// FIXED: correct localhost API call (NOT a file path)
+// Check room availability with configurable API endpoint
+
+// Configuration: For production, set via environment variable or config file
+const API_ENDPOINT = typeof window.REMS_API_BASE !== 'undefined' 
+  ? window.REMS_API_BASE 
+  : 'http://localhost:3000';
 
 async function checkAvailability() {
   try {
@@ -13,7 +18,7 @@ async function checkAvailability() {
     }
 
     const response = await fetch(
-      `http://localhost:3000/api/bookings/availability?room=${encodeURIComponent(room)}&checkin=${checkin}&checkout=${checkout}`
+      `${API_ENDPOINT}/api/bookings/availability?room=${encodeURIComponent(room)}&checkin=${checkin}&checkout=${checkout}`
     );
 
     if (!response.ok) {

@@ -15,9 +15,26 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;700&family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
 
-<!-- Minimal structured data -->
+<!-- Structured data -->
 <script type="application/ld+json">
-{"@context":"https://schema.org","@type":"Hotel","name":"REMS HOTEL","description":"Luxury rooms and modern hospitality in Freetown.","address":{"@type":"PostalAddress","addressLocality":"Freetown","addressCountry":"SL"},"telephone":"+232-XXX-XXX","email":"mansaraym246@gmail.com","url":""}
+{
+  "@context": "https://schema.org",
+  "@type": "Hotel",
+  "name": "REMS HOTEL",
+  "description": "Luxury rooms and modern hospitality in Freetown, Sierra Leone.",
+  "address": {
+    "@type": "PostalAddress",
+    "streetAddress": "123 Main Street",
+    "addressLocality": "Freetown",
+    "addressCountry": "SL",
+    "postalCode": "23273"
+  },
+  "telephone": "+232-33-503-686",
+  "email": "mansaraym246@gmail.com",
+  "url": "https://remshotel.sl",
+  "image": "https://images.unsplash.com/photo-1501117716987-c8e11141f3b1",
+  "priceRange": "$$"
+}
 </script>
 
 <style>
@@ -139,6 +156,7 @@ body{
   align-items:center;
   text-align:center;
   overflow:hidden;
+  margin-top:70px;
 }
 
 /* background image layer (fades in/out). stays under the overlay and text */
@@ -146,7 +164,7 @@ body{
   content: "";
   position: absolute;
   inset: 0;
-  background-image: url("./Rems.png"); /* use explicit local path */
+  background-image: url("./ Rems.png"); /* use explicit local path */
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
@@ -334,16 +352,13 @@ footer a:hover{color:var(--gold)}
 
 <body>
   <!-- skip link for keyboard users -->
-  <a href="#rooms" class="skip-link" style="position:absolute;left:-9999px;top:auto;overflow:hidden;" onfocus="this.style.left='8px';this.style.background='#fff';this.style.color='#000';this.style.padding='8px';this.style.zIndex='9999'">Skip to content</a>
+  <a href="#rooms" class="skip-link" style="position:absolute;left:-9999px;top:auto;overflow:hidden;" onfocus="this.style.left='8px';this.style.background='#fff';this.style.color='#000';this.style.padding='8px';this.style.zIndex='9999'" onblur="this.style.left='-9999px'">Skip to main content</a>
 
   <!-- ========= PREMIUM HOTEL HEADER ========= -->
 <header class="lux-header" id="luxHeader" role="banner">
-  <div class="lux-overlay" aria-hidden="true"></div>
-
   <div class="lux-container">
     <!-- Logo (left) -->
     <div class="lux-logo" aria-hidden="false">
-      <div class="logo-slot" aria-hidden="true"></div>
       <div>
         <span class="brand-accent">REMS</span>
         <span style="font-size:12px;opacity:.9">HOTEL · Life Style & Comfort</span>
@@ -373,7 +388,6 @@ footer a:hover{color:var(--gold)}
   <div class="hero-text">
     <h2>Luxury Redefined</h2>
     <p>Experience premium comfort and modern hospitality at REMS HOTEL.</p>
-    <!-- removed the hidden <img> — background handled via CSS -->
   </div>
 </div>
 
@@ -467,7 +481,7 @@ footer a:hover{color:var(--gold)}
 
   function setMenuOpen(open){
     nav.classList.toggle('open', open);
-    menu.classList.toggle('show', open); // legacy class used elsewhere
+    menu.classList.toggle('show', open);
     menuBtn.setAttribute('aria-expanded', String(Boolean(open)));
     nav.setAttribute('aria-hidden', String(!open));
     if (open) {
@@ -476,13 +490,11 @@ footer a:hover{color:var(--gold)}
     }
   }
 
-  // Toggle menu on button click
   menuBtn.addEventListener('click', function(){
     const isOpen = nav.classList.contains('open');
     setMenuOpen(!isOpen);
   });
 
-  // Close menu when clicking outside (improved)
   document.addEventListener('click', function(e){
     const isMenuBtn = menuBtn.contains(e.target);
     const isNav = nav.contains(e.target);
@@ -491,19 +503,18 @@ footer a:hover{color:var(--gold)}
     }
   });
 
-  // Keyboard navigation for menu items
   menu.addEventListener('keydown', function(e){
     if (e.key === 'Tab') {
       const focusable = menu.querySelectorAll('a');
       const first = focusable[0];
       const last = focusable[focusable.length - 1];
-      if (e.shiftKey) { // Shift + Tab
+      if (e.shiftKey) {
         if (document.activeElement === first) {
           e.preventDefault();
           setMenuOpen(false);
           menuBtn.focus();
         }
-      } else { // Tab
+      } else {
         if (document.activeElement === last) {
           e.preventDefault();
           first.focus();
@@ -512,7 +523,6 @@ footer a:hover{color:var(--gold)}
     }
   });
 
-  // Close menu on Esc key
   document.addEventListener('keydown', function(e){
     if (e.key === 'Escape') {
       setMenuOpen(false);
@@ -520,7 +530,6 @@ footer a:hover{color:var(--gold)}
     }
   });
 
-  // Initial focus on menu button
   menuBtn.focus();
 })();
 
@@ -531,13 +540,10 @@ footer a:hover{color:var(--gold)}
   const img = new Image();
   img.src = './Rems.png';
   img.onload = function(){
-    // make background visible immediately (like before)
     hero.classList.add('bg-visible');
-    // small delay then start the fade loop
     setTimeout(()=> hero.classList.add('bg-ready'), 600);
   };
   img.onerror = function(){
-    // fallback: show the background slot so page isn't empty
     hero.classList.add('bg-visible');
     console.warn('Failed to preload hero background Rems.png');
   };
