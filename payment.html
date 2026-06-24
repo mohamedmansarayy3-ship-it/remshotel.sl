@@ -321,19 +321,22 @@ async function pay() {
   const timeout = setTimeout(()=> controller.abort(), 15000); // 15s
 
   try {
-    let res;
-    const API_BASE = await resolveApiBase();
+  let res;
+  const API_BASE = await resolveApiBase();
 
-    // build a safe endpoint: use API_BASE if provided, otherwise use location.origin
-    let endpoint;
-    if (API_BASE) {
-      endpoint = API_BASE.replace(/\/$/, '') + '/api/bookings';
-    } else {
-      if (location.protocol === 'file:') {
-        throw new Error('Cannot contact API when the page is opened via file://. Serve the site over http:// (live-server or similar).');
-      }
-      endpoint = location.origin.replace(/\/$/, '') + '/api/bookings';
+  let endpoint;
+  if (API_BASE) {
+    endpoint = API_BASE.replace(/\/$/, '') + '/api/booking';
+  } else {
+    if (location.protocol === 'file:') {
+      throw new Error(
+        'Cannot contact API when the page is opened via file://. Serve the site over http://'
+      );
     }
+    endpoint = location.origin.replace(/\/$/, '') + '/api/booking';
+  }
+
+  // now fetch(endpoint, ...) works correctly
 
     // If bank receipt uploaded, use FormData
     if (method.value === "bank" && bankReceipt.files[0]) {
