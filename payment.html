@@ -146,57 +146,12 @@ Account No: <b>123456789</b><br><br>
 
 <script>
 /* ================= LOAD BOOKING DATA ================= */
-// Resolve API base dynamically: try local mock addresses first, then same-origin fallback.
-let _resolvedApiBase = null;
-async function probeUrl(url, timeoutMs = 1800){
-  const controller = new AbortController();
-  const id = setTimeout(()=> controller.abort(), timeoutMs);
-  try{
-    const res = await fetch(url, { method: 'GET', mode: 'cors', signal: controller.signal });
-    clearTimeout(id);
-    // reachable even if 404 — treat as reachable
-    return true;
-  }catch(e){
-    clearTimeout(id);
-    return false;
-  }
-}
-
-async function resolveApiBase(){
-  if (_resolvedApiBase !== null) return _resolvedApiBase;
-  const candidates = [
-    'http://127.0.0.1:5000',
-    'http://localhost:5000',
-    '' // same-origin (relative)
-  ];
-
-  for (const base of candidates){
-    const test = (base === '') ? '/api/bookings' : (base + '/api/bookings');
-    try{
-      const ok = await probeUrl(test);
-      if (ok) { _resolvedApiBase = base; console.log('Using API base:', base || '(same-origin)'); return base; }
-    }catch(e){ /* continue */ }
-  }
-  // last-resort: empty
-  _resolvedApiBase = '';
-  return '';
-}
-
-// read bookingData from sessionStorage (if missing, try query params fallback)
 let stored = sessionStorage.getItem("bookingData");
-if (!stored) {
-  // try to construct from URL params (fallback)
-  const qp = Object.fromEntries(new URL(location.href).searchParams.entries());
-  if (Object.keys(qp).length) {
-    stored = JSON.stringify(qp);
-    sessionStorage.setItem('bookingData', stored);
-  }
-}
 
 if (!stored) {
   alert("Booking session expired. Please book again.");
   location.href = "booking.html";
-  throw new Error("No bookingData in sessionStorage");
+  throw new Error("No bookingData");
 }
 
 const data = JSON.parse(stored);
@@ -216,16 +171,12 @@ const afri = document.getElementById("afri");
 const orange = document.getElementById("orange");
 const qmoney = document.getElementById("qmoney");
 
-const bankReceipt = document.getElementById("bankReceipt");
 const afriTxn = document.getElementById("afriTxn");
 const orangeTxn = document.getElementById("orangeTxn");
 const qmoneyTxn = document.getElementById("qmoneyTxn");
 
 const status = document.getElementById("status");
 const payBtn = document.getElementById("payBtn");
-
-// store default button text once
-const DEFAULT_PAY_BTN_TEXT = payBtn ? payBtn.textContent : "Confirm & Send Payment";
 
 /* ================= FILL RECEIPT ================= */
 r_name.textContent = data.name || "";
@@ -234,10 +185,7 @@ r_phone.textContent = data.phone || "";
 r_room.textContent = `${data.room || ""} (${data.number || ""})`;
 r_checkin.textContent = data.checkin || "";
 r_checkout.textContent = data.checkout || "—";
-// `r_total` is placed after a literal `$` in the HTML, so write only the numeric portion
-r_total.textContent = data.totalAmount
-  ? Number(data.totalAmount).toFixed(2)
-  : "0.00";
+r_total.textContent = Number(data.totalAmount || 0).toFixed(2);
 
 /* ================= PAYMENT METHOD SWITCH ================= */
 method.addEventListener("change", () => {
@@ -259,177 +207,54 @@ async function pay() {
     return;
   }
 
-  // basic disable UI
   payBtn.disabled = true;
   payBtn.textContent = "Submitting...";
 
-  data.paymentMethod = method.value;
+  const payload = {
+    name: data.name,
+    email: data.email,
+    phone: data.phone,
+    room: data.room,
+    roomNumber: data.number,
+    checkin: data.checkin,
+    checkout: data.checkout,
+    totalAmount: data.totalAmount,
+    paymentMethod: method.value,
+    transactionId: null
+  };
 
-  // validate inputs per method
-  if (method.value === "bank") {
-    if (!bankReceipt || !bankReceipt.files || !bankReceipt.files[0]) {
-      alert("Upload bank receipt");
-      restoreButton();
-      return;
-    }
-    const file = bankReceipt.files[0];
-    const maxBytes = 5 * 1024 * 1024; // 5MB
-    if (file.size > maxBytes) {
-      alert("Receipt file must be 5MB or smaller.");
-      restoreButton();
-      return;
-    }
-    const allowed = ["image/png","image/jpeg","application/pdf","image/jpg"];
-    if (!allowed.includes(file.type) && file.type !== "") {
-      alert("Unsupported file type. Use PNG/JPG/PDF.");
-      restoreButton();
-      return;
-    }
-    data.bankReceiptUploaded = true;
-  }
-
-  if (method.value === "afrimoney") {
-    if (!afriTxn || !afriTxn.value || afriTxn.value.trim().length < 3) {
-      alert("Enter a valid Afrimoney Transaction ID");
-      restoreButton();
-      return;
-    }
-    data.transactionId = afriTxn.value.trim();
-  }
-
-  if (method.value === "orange") {
-    if (!orangeTxn || !orangeTxn.value || orangeTxn.value.trim().length < 3) {
-      alert("Enter a valid Orange Money Transaction ID");
-      restoreButton();
-      return;
-    }
-    data.transactionId = orangeTxn.value.trim();
-  }
-
-  if (method.value === "qmoney") {
-    if (!qmoneyTxn || !qmoneyTxn.value || qmoneyTxn.value.trim().length < 3) {
-      alert("Enter a valid QMoney Transaction ID");
-      restoreButton();
-      return;
-    }
-    data.transactionId = qmoneyTxn.value.trim();
-  }
-
-  /* ===== SEND TO BACKEND ===== */
-  // use AbortController for timeout
-  const controller = new AbortController();
-  const timeout = setTimeout(()=> controller.abort(), 15000); // 15s
+  if (method.value === "afrimoney") payload.transactionId = afriTxn.value.trim();
+  if (method.value === "orange") payload.transactionId = orangeTxn.value.trim();
+  if (method.value === "qmoney") payload.transactionId = qmoneyTxn.value.trim();
 
   try {
-  let res;
-  const API_BASE = await resolveApiBase();
-
-  let endpoint;
-  if (API_BASE) {
-    endpoint = API_BASE.replace(/\/$/, '') + '/api/booking';
-  } else {
-    if (location.protocol === 'file:') {
-      throw new Error(
-        'Cannot contact API when the page is opened via file://. Serve the site over http://'
-      );
-    }
-    endpoint = location.origin.replace(/\/$/, '') + '/api/booking';
-  }
-
-  // now fetch(endpoint, ...) works correctly
-
-    // If bank receipt uploaded, use FormData
-    if (method.value === "bank" && bankReceipt.files[0]) {
-      const form = new FormData();
-      form.append("bankReceipt", bankReceipt.files[0]);
-      form.append("data", JSON.stringify(data));
-      res = await fetch(endpoint, {
+    const res = await fetch(
+      "https://macbookair.remshotelgroupsix.workers.dev/api/booking",
+      {
         method: "POST",
-        body: form,
-        signal: controller.signal
-      });
-    } else {
-      res = await fetch(endpoint, {
-        method: "POST",
-        headers: {"Content-Type":"application/json"},
-        body: JSON.stringify(data),
-        signal: controller.signal
-      });
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      }
+    );
+
+    const result = await res.json();
+
+    if (!res.ok || !result.success) {
+      throw new Error(result.message || "Payment failed");
     }
 
-    // clear timeout on success path
-    clearTimeout(timeout);
-
-    if (!res.ok) {
-      const errText = await res.text().catch(()=>res.statusText || String(res.status));
-      alert("Payment submission failed: " + (errText || res.status));
-      restoreButton();
-      return;
-    }
-
-    // Try to parse JSON, but be resilient
-    let savedBooking = null;
-    try {
-      savedBooking = await res.json();
-    } catch (e) {
-      savedBooking = { id: null };
-    }
-
-    if (!savedBooking || !savedBooking.id) {
-      alert("Payment submitted but server did not return a booking id. Contact support.");
-      restoreButton();
-      return;
-    }
-
-    // persist and show success
-    // persist booking in sessionStorage for immediate user flow
-    sessionStorage.removeItem("bookingData");
-    sessionStorage.setItem("bookingId", String(savedBooking.id));
-
-    // Also append booking to localStorage "bookings" so admin.html can read it.
-    try {
-      const existing = JSON.parse(localStorage.getItem('bookings') || '[]');
-      const record = {
-        id: savedBooking.id,
-        timestamp: new Date().toISOString(),
-        room: data.room || data.roomName || '',
-        roomNumber: data.number || data.roomId || '',
-        name: data.name || '',
-        email: data.email || '',
-        phone: data.phone || '',
-        totalAmount: data.totalAmount || data.amount || 0,
-        paymentMethod: data.paymentMethod || '',
-        raw: data
-      };
-      existing.push(record);
-      localStorage.setItem('bookings', JSON.stringify(existing));
-      // notify other tabs/pages
-      localStorage.setItem('bookings_updated', String(Date.now()));
-    } catch (e) {
-      console.warn('Failed to persist booking to localStorage', e);
-    }
-
-    status.textContent = "✅ Payment submitted successfully.";
+    status.textContent = "✅ Payment submitted successfully!";
     payBtn.textContent = "Submitted";
     payBtn.disabled = true;
 
-  } catch (err) {
-    // ensure timeout cleared
-    clearTimeout(timeout);
-    if (err.name === "AbortError") {
-      alert("Request timed out. Please try again.");
-    } else {
-      console.error('Payment submit error:', err);
-      alert("Network error while submitting payment: " + (err.message || String(err)) + ". Please try again.");
-    }
-    restoreButton();
-  }
-}
+    sessionStorage.removeItem("bookingData");
 
-function restoreButton(){
-  payBtn.disabled = false;
-  // restore using stored default text
-  payBtn.textContent = DEFAULT_PAY_BTN_TEXT;
+  } catch (err) {
+    console.error(err);
+    alert("Payment failed: " + err.message);
+    payBtn.disabled = false;
+    payBtn.textContent = "Confirm & Send Payment";
+  }
 }
 </script>
 </body>
