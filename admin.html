@@ -209,7 +209,7 @@ let bookings = [];
 
 /* ================= LOAD BOOKINGS ================= */
 async function loadBookings(){
-  const res = await fetch("http://127.0.0.1:5000/api/bookings");
+  const res = await fetch("https://macbookair.remshotelgroupsix.workers.dev");
   bookings = await res.json();
   render();
 }
